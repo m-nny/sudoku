@@ -66,7 +66,7 @@ func NewBoard(b string) (*Board, error) {
 	}, nil
 }
 
-func MustNewBoard(b string)*Board {
+func MustNewBoard(b string) *Board {
 	board, err := NewBoard(b)
 	if err != nil {
 		return nil
@@ -109,6 +109,12 @@ func (b *Board) Copy() *Board {
 	return &Board{options: options}
 }
 
+func (b *Board) CopyAndAssign(i, j, val int) *Board {
+	b = b.Copy()
+	b.options[i][j] = oneOption(val)
+	return b
+}
+
 func (b *Board) String() string {
 	var sb strings.Builder
 	for _, row := range b.options {
@@ -124,6 +130,9 @@ func (b *Board) String() string {
 }
 
 func (b *Board) PrettyString() string {
+	if b == nil {
+		return "<nil>"
+	}
 	var sb strings.Builder
 	for i, row := range b.options {
 		for j, cell := range row {
@@ -138,15 +147,15 @@ func (b *Board) PrettyString() string {
 		}
 		fmt.Fprintln(&sb)
 		if (i+1)%subrank == 0 && i+1 < rank {
-			fmt.Fprintln(&sb, strings.Repeat("-", (rank + 2) * 2))
+			fmt.Fprintln(&sb, strings.Repeat("-", (rank+2)*2))
 		}
 	}
 	return sb.String()
 }
 
-func (b*Board) Match(solution string) bool {
+func (b *Board) Match(solution string) bool {
 	if !b.Solved() || !b.Valid() {
-		return false;
+		return false
 	}
 	return b.String() == solution
 }

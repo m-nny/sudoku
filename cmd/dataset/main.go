@@ -34,17 +34,22 @@ func solveDataset(dataset string) error {
 		board, err := sudoku.NewBoard(puzzle)
 		if err != nil {
 			errors++
-			continue
+			fmt.Printf("Error reading board:\n%v\n%v\n", board.PrettyString(), err)
+			break
 		}
 		prop, err := sudoku.Solve(board)
 		if err != nil {
 			errors++
-			continue
+			fmt.Printf("Error solving board:\n%v\n%v\n", board.PrettyString(), err)
+			break
 		}
 		if prop.Match(solution) {
 			correct++
 		} else {
+			fmt.Printf("Found incorrect solution for board:\n%v\n%v\n", puzzle, board.PrettyString())
+			fmt.Printf("Expected:\n%v\n%v\n", solution, sudoku.MustNewBoard(solution).PrettyString())
 			incorrect++
+			break
 		}
 	}
 	fmt.Printf("All %d puzzles solved!\ncorrect: %d incorrent: %d errors: %d\n",
@@ -60,6 +65,9 @@ func readDataset(filepath string) ([][]string, error) {
 	defer f.Close()
 
 	csvReader := csv.NewReader(f)
+	if _, err = csvReader.Read(); err != nil {
+		return nil, err
+	}
 	records, err := csvReader.ReadAll()
 	if err != nil {
 		return nil, err

@@ -6,6 +6,7 @@ import (
 
 func Solve(b *Board) (*Board, error) {
 	// fmt.Printf("Solving:\n%v\n", b.PrettyString())
+	b.propagateOnes()
 	if !b.Valid() {
 		return nil, InvalidBoardErr
 	}
@@ -18,7 +19,7 @@ func Solve(b *Board) (*Board, error) {
 		return nil, UnknownErr
 	}
 	for _, val := range b.options[i][j] {
-		prop, err := Solve(assign(b, i, j, val))
+		prop, err := Solve(b.CopyAndAssign(i, j, val))
 		if err == nil {
 			return prop, nil
 		}
@@ -29,8 +30,30 @@ func Solve(b *Board) (*Board, error) {
 	return nil, NoSolutionErr
 }
 
-func assign(b *Board, i, j, val int) *Board {
-	b = b.Copy()
+func FirstEmpty(b *Board) (int, int) {
+	for i := range b.options {
+		for j := range b.options[i] {
+			if len(b.options[i][j]) > 1 {
+				return i, j
+			}
+		}
+	}
+	return -1, -1
+}
+
+func (b *Board) propagateOnes() *Board {
+	for i := range b.options {
+		for j := range b.options[i] {
+			if len(b.options[i][j]) == 1 {
+				b.__propagateOne(i, j)
+			}
+		}
+	}
+	return b
+}
+
+func (b *Board) __propagateOne(i, j int) *Board {
+	val := b.options[i][j][0]
 	for ii := 0; ii < rank; ii++ {
 		b.options[ii][j] = Remove(b.options[ii][j], val)
 	}
@@ -46,15 +69,4 @@ func assign(b *Board, i, j, val int) *Board {
 	}
 	b.options[i][j] = oneOption(val)
 	return b
-}
-
-func FirstEmpty(b *Board) (int, int) {
-	for i := range b.options {
-		for j := range b.options[i] {
-			if len(b.options[i][j]) > 1 {
-				return i, j
-			}
-		}
-	}
-	return -1, -1
 }
