@@ -143,3 +143,10 @@ func (b *Board) PrettyString() string {
 	}
 	return sb.String()
 }
+
+func (b*Board) Match(solution string) bool {
+	if !b.Solved() || !b.Valid() {
+		return false;
+	}
+	return b.String() == solution
+}
