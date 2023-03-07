@@ -7,22 +7,26 @@ import (
 )
 
 func TestRank(t *testing.T) {
-	want := 9
-	if rank != want {
-		t.Errorf("rank = %v; want = %v", rank, want)
+	wantSubrank := 3
+	if subrank != wantSubrank {
+		t.Errorf("subrank = %v; want = %v", subrank, wantSubrank)
+	}
+	wantRank := wantSubrank * wantSubrank
+	if rank != wantRank {
+		t.Errorf("rank = %v; want = %v", rank, wantRank)
 	}
 }
 
 func TestOneOption(t *testing.T) {
 	want := Options{1}
-	got := OneOption(1)
+	got := oneOption(1)
 	if !cmp.Equal(got, want) {
 		t.Errorf("OneOption() = %v; want = %v", got, want)
 	}
 }
 func TestAllOptions(t *testing.T) {
 	want := Options{1, 2, 3, 4, 5, 6, 7, 8, 9}
-	got := AllOptions()
+	got := allOptions()
 	if !cmp.Equal(got, want) {
 		t.Errorf("AllOptions() = %v; want = %v", got, want)
 	}
@@ -171,5 +175,29 @@ func TestNewBoard(t *testing.T) {
 				t.Errorf("newBoard() returned diff (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestBoardString(t *testing.T) {
+	want := "004300209005009001070060043006002087190007400050083000600000105003508690042910300"
+	b, gotErr := NewBoard(want)
+	if gotErr != nil {
+		t.Errorf("NewBoard() got error %v, but we don't want", gotErr)
+	}
+	got := b.String()
+	if got != want {
+		t.Errorf("AllOptions() = %v; want = %v", got, want)
+	}
+}
+
+func TestBoardCopy(t *testing.T) {
+	want := "004300209005009001070060043006002087190007400050083000600000105003508690042910300"
+	orig, gotErr := NewBoard(want)
+	if gotErr != nil {
+		t.Errorf("NewBoard() got error %v, but we don't want", gotErr)
+	}
+	got := orig.Copy()
+	if diff := cmp.Diff(got, orig, cmp.AllowUnexported(Board{})); diff != "" {
+		t.Errorf("newBoard() returned diff (-want +got):\n%s", diff)
 	}
 }
