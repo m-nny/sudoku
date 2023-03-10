@@ -52,7 +52,7 @@ func init() {
 
 type Values = map[string]string
 
-func ParseGrid(grid string) (Values, bool) {
+func ParseGrid(grid string) Values {
 	values := make(Values)
 	for _, s := range squares {
 		values[s] = digits
@@ -61,11 +61,11 @@ func ParseGrid(grid string) (Values, bool) {
 		if !strings.Contains(digits, d) {
 			continue
 		}
-		if _, ok := assign(values, s, d); !ok {
-			return values, false
+		if val := assign(values, s, d); val == nil {
+			return nil
 		}
 	}
-	return values, true
+	return values
 }
 
 func gridValues(grid string) map[string]string {
@@ -86,29 +86,29 @@ func gridValues(grid string) map[string]string {
 	return values
 }
 
-func assign(values Values, s, d string) (Values, bool) {
+func assign(values Values, s, d string) Values {
 	otherValues := strings.ReplaceAll(values[s], d, "")
 	for _, d2 := range otherValues {
-		if _, ok := eliminate(values, s, string(d2)); !ok {
-			return nil, false
+		if val := eliminate(values, s, string(d2)); val == nil {
+			return nil
 		}
 	}
-	return values, true
+	return values
 }
 
-func eliminate(values Values, s string, d string) (Values, bool) {
+func eliminate(values Values, s string, d string) Values {
 	if !strings.Contains(values[s], d) {
-		return values, true // already eliminated
+		return values // already eliminated
 	}
 	values[s] = strings.ReplaceAll(values[s], string(d), "")
 	// if square is reduced to one value d, then eliminate d from the peers
 	if len(values[s]) == 0 {
-		return nil, false
+		return nil
 	} else if len(values[s]) == 1 {
 		d2 := values[s]
 		for _, s2 := range peers[s] {
-			if _, ok := eliminate(values, s2, d2); !ok {
-				return nil, false
+			if val := eliminate(values, s2, d2); val == nil {
+				return nil
 			}
 		}
 	}
@@ -121,17 +121,17 @@ func eliminate(values Values, s string, d string) (Values, bool) {
 			}
 		}
 		if len(dplaces) == 0 {
-			return nil, false
+			return nil
 		} else if len(dplaces) == 1 {
-			if _, ok := assign(values, dplaces[0], d); !ok {
-				return nil, false
+			if val := assign(values, dplaces[0], d); val == nil {
+				return nil
 			}
 		}
 	}
-	return values, true
+	return values
 }
 
-func ValuesString(values Values) string {
+func PrettyString(values Values) string {
 	var sb strings.Builder
 	width := 0
 	for _, s := range squares {
@@ -151,6 +151,18 @@ func ValuesString(values Values) string {
 		fmt.Fprintln(&sb)
 		if (i+1)%subrank == 0 && (i+1) < rank {
 			fmt.Fprintln(&sb, line)
+		}
+	}
+	return sb.String()
+}
+
+func CompactString(values Values) string {
+	var sb strings.Builder
+	for _, s := range squares {
+		if len(values[s]) == 1 {
+			fmt.Fprintf(&sb, "%v", values[s])
+		} else {
+			fmt.Fprintf(&sb, "0")
 		}
 	}
 	return sb.String()

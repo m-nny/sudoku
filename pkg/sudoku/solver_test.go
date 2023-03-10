@@ -26,14 +26,14 @@ func TestSolve(t *testing.T) {
 	}
 	for _, test := range testCase {
 		t.Run(test.name, func(t *testing.T) {
-			// got, gotErr := Solve(MustNewBoard(test.puzzle))
-			// if gotErr != nil {
-			// 	t.Errorf("Solve() got error %v, but we don't want", gotErr)
-			// }
-			// if got.String() != test.solution {
-			// 	t.Logf("got:\n%v\n", got.PrettyString())
-			// 	t.Errorf("Solve() = %v; want = %v", got.String(), test.solution)
-			// }
+			got := Solve(test.puzzle)
+			if got == nil {
+				t.Errorf("Solve() got error")
+			}
+			if CompactString(got) != test.solution {
+				t.Logf("got:\n%v\n", PrettyString(got))
+				t.Errorf("Solve() = %v; want = %v", CompactString(got), test.solution)
+			}
 		})
 	}
 }

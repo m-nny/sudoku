@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	puzzle := "4.....8.5.3..........7......2.....6.....8.4......1.......6.3.7.5..2.....1.4......"
+	puzzle := "004300209005009001070060043006002087190007400050083000600000105003508690042910300"
 	solution := "864371259325849761971265843436192587198657432257483916689734125713528694542916378"
 	if err := solve(puzzle, solution); err != nil {
 		fmt.Printf("Could not solve puzzle: %v\n", err)
@@ -17,21 +17,16 @@ func main() {
 }
 
 func solve(puzzle, solution string) error {
-	puz, ok := sudoku.ParseGrid(puzzle)
-	if !ok {
+	puz := sudoku.Solve(puzzle)
+	if puz == nil {
 		return sudoku.UnknownErr
 	}
-	fmt.Printf("Puzzle:\n%v\n", sudoku.ValuesString(puz))
+	fmt.Printf("Puzzle:\n%v\n", sudoku.PrettyString(puz))
 
-	// prop, err := sudoku.Solve(puz)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// if prop.String() != solution {
-	// 	fmt.Printf("Incorrect solution.\nwant=\n%vgot=\n%v\n", solution, prop.PrettyString())
-	// }
-	// fmt.Printf("Found correct solution.\n%v\n", prop.PrettyString())
+	fmt.Printf("Found solution.\n%v\n", sudoku.PrettyString(puz))
+	if sudoku.CompactString(puz) != solution {
+		fmt.Printf("Solve() = %v; want = %v", sudoku.CompactString(puz), solution)
+	}
 
 	return nil
 }

@@ -2,15 +2,20 @@ package main
 
 import (
 	"encoding/csv"
+	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/m-nny/sudoku-solver/pkg/sudoku"
 )
 
 func main() {
-	dataset := "testdata/sudoku_1k.csv"
-	err := solveDataset(dataset)
+	datasetPtr := flag.String("dataset", "testdata/sudoku_1k.csv", "csv dataset")
+
+	flag.Parse()
+
+	err := solveDataset(*datasetPtr)
 	if err != nil {
 		fmt.Printf("Could not solve puzzle: %v\n", err)
 	}
@@ -23,37 +28,34 @@ func solveDataset(dataset string) error {
 	}
 
 	var correct, incorrect, errors int
+	start := time.Now()
 
 	for i, entry := range sudokus {
-		if i%10 == 0 {
+		if i%100 == 0 {
 			fmt.Printf("[%d/%d] correct: %d incorrent: %d errors: %d\n",
 				i, len(sudokus), correct, incorrect, errors)
+			fmt.Printf("Time spent %v\n", time.Since(start))
 		}
 
 		puzzle, solution := entry[0], entry[1]
-		board, err := sudoku.NewBoard(puzzle)
-		if err != nil {
+		board := sudoku.Solve(puzzle)
+		if board == nil {
 			errors++
-			fmt.Printf("Error reading board:\n%v\n%v\n", board.PrettyString(), err)
+			fmt.Printf("Error reading board:\n%v\n", err)
 			break
 		}
-		prop, err := sudoku.Solve(board)
-		if err != nil {
-			errors++
-			fmt.Printf("Error solving board:\n%v\n%v\n", board.PrettyString(), err)
-			break
-		}
-		if prop.Match(solution) {
+		if sudoku.CompactString(board) == solution {
 			correct++
 		} else {
-			fmt.Printf("Found incorrect solution for board:\n%v\n%v\n", puzzle, board.PrettyString())
-			fmt.Printf("Expected:\n%v\n%v\n", solution, sudoku.MustNewBoard(solution).PrettyString())
+			fmt.Printf("Found incorrect solution for board:\n%v\n%v\n", puzzle, sudoku.PrettyString(board))
+			fmt.Printf("Expected:\n%v\n", solution)
 			incorrect++
 			break
 		}
 	}
 	fmt.Printf("All %d puzzles solved!\ncorrect: %d incorrent: %d errors: %d\n",
 		len(sudokus), correct, incorrect, errors)
+	fmt.Printf("Total time spent %v\n", time.Since(start))
 	return nil
 }
 
