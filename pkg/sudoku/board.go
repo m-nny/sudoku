@@ -2,160 +2,156 @@ package sudoku
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
+
+	"golang.org/x/exp/slices"
 )
-
-type Options = []int
-
-func allOptions() Options {
-	var opts Options
-	for i := 1; i <= rank; i++ {
-		opts = append(opts, i)
-	}
-	return opts
-}
-
-func oneOption(val int) Options {
-	return Options{val}
-}
-
-func Remove(opts Options, val int) Options {
-	idx := -1
-	for i := range opts {
-		if opts[i] == val {
-			idx = i
-		}
-	}
-	if idx != -1 {
-		opts = append(opts[0:idx], opts[idx+1:]...)
-		return opts
-	}
-	return opts
-}
 
 const rank = 9
 const subrank = 3
 
-type Board struct {
-	options [][]Options
-}
+const digits = "123456789"
+const rows = "ABCDEFGHI"
+const cols = digits
 
-func NewBoard(b string) (*Board, error) {
-	if len(b) < rank*rank {
-		return nil, fmt.Errorf("board should have at least %d digits", rank*rank)
+var squares = cross(rows, cols)
+var unitList [][]string
+var units = make(map[string][][]string)
+var peers = make(map[string][]string)
+
+func init() {
+	// unitList
+	for _, c := range cols {
+		unitList = append(unitList, cross(rows, string(c)))
 	}
-	options := make([][]Options, rank)
-	for i := range options {
-		options[i] = make([]Options, rank)
-		for j := range options[i] {
-			str_pos := i*rank + j
-			val, err := strconv.ParseInt(string(b[str_pos]), 10, 32)
-			if err != nil {
-				return nil, err
-			}
-			if val != 0 {
-				options[i][j] = oneOption(int(val))
-			} else {
-				options[i][j] = allOptions()
-			}
+	for _, r := range rows {
+		unitList = append(unitList, cross(string(r), cols))
+	}
+	for _, rs := range []string{"ABC", "DEF", "GHI"} {
+		for _, cs := range []string{"123", "456", "789"} {
+			unitList = append(unitList, cross(rs, cs))
 		}
 	}
-	return &Board{
-		options: options,
-	}, nil
-}
 
-func MustNewBoard(b string) *Board {
-	board, err := NewBoard(b)
-	if err != nil {
-		return nil
-	}
-	return board
-}
-
-func (b *Board) Valid() bool {
-	for i := range b.options {
-		for j := range b.options[i] {
-			if len(b.options[i][j]) == 0 {
-				return false
+	// units
+	for _, s := range squares {
+		var sUnits [][]string
+		for _, u := range unitList {
+			if slices.Contains(u, s) {
+				sUnits = append(sUnits, u)
 			}
 		}
+		units[s] = sUnits
 	}
-	return true
+
+	// peers
+	for _, s := range squares {
+		peers[s] = uniqueWithout(units[s], s)
+	}
 }
 
-func (b *Board) Solved() bool {
-	for i := range b.options {
-		for j := range b.options[i] {
-			if len(b.options[i][j]) != 1 {
-				return false
-			}
+type Values = map[string]string
+
+func ParseGrid(grid string) (Values, bool) {
+	values := make(Values)
+	for _, s := range squares {
+		values[s] = digits
+	}
+	for s, d := range gridValues(grid) {
+		if !strings.Contains(digits, d) {
+			continue
+		}
+		if _, ok := assign(values, s, d); !ok {
+			return values, false
 		}
 	}
-	return true
+	return values, true
 }
 
-func (b *Board) Copy() *Board {
-	options := make([][]Options, rank)
-	for i := range options {
-		options[i] = make([]Options, rank)
-		for j := range options[i] {
-			for _, val := range b.options[i][j] {
-				options[i][j] = append(options[i][j], val)
-			}
-		}
-	}
-	return &Board{options: options}
-}
-
-func (b *Board) CopyAndAssign(i, j, val int) *Board {
-	b = b.Copy()
-	b.options[i][j] = oneOption(val)
-	return b
-}
-
-func (b *Board) String() string {
+func gridValues(grid string) map[string]string {
 	var sb strings.Builder
-	for _, row := range b.options {
-		for _, cell := range row {
-			if len(cell) == 1 {
-				fmt.Fprintf(&sb, "%d", cell[0])
-			} else {
-				fmt.Fprintf(&sb, "0")
+	for _, c := range grid {
+		if strings.ContainsRune(digits, c) || strings.ContainsRune(".0", c) {
+			fmt.Fprintf(&sb, "%v", string(c))
+		}
+	}
+	g := sb.String()
+	if len(g) != 81 {
+		panic("Board should have 81 cells")
+	}
+	values := make(map[string]string)
+	for i, s := range squares {
+		values[s] = string(g[i])
+	}
+	return values
+}
+
+func assign(values Values, s, d string) (Values, bool) {
+	otherValues := strings.ReplaceAll(values[s], d, "")
+	for _, d2 := range otherValues {
+		if _, ok := eliminate(values, s, string(d2)); !ok {
+			return nil, false
+		}
+	}
+	return values, true
+}
+
+func eliminate(values Values, s string, d string) (Values, bool) {
+	if !strings.Contains(values[s], d) {
+		return values, true // already eliminated
+	}
+	values[s] = strings.ReplaceAll(values[s], string(d), "")
+	// if square is reduced to one value d, then eliminate d from the peers
+	if len(values[s]) == 0 {
+		return nil, false
+	} else if len(values[s]) == 1 {
+		d2 := values[s]
+		for _, s2 := range peers[s] {
+			if _, ok := eliminate(values, s2, d2); !ok {
+				return nil, false
 			}
 		}
 	}
-	return sb.String()
+	// if a unit u is reduced to only one place for a value d, then put it there
+	for _, u := range units[s] {
+		var dplaces []string
+		for _, s := range u {
+			if strings.Contains(values[s], d) {
+				dplaces = append(dplaces, s)
+			}
+		}
+		if len(dplaces) == 0 {
+			return nil, false
+		} else if len(dplaces) == 1 {
+			if _, ok := assign(values, dplaces[0], d); !ok {
+				return nil, false
+			}
+		}
+	}
+	return values, true
 }
 
-func (b *Board) PrettyString() string {
-	if b == nil {
-		return "<nil>"
-	}
+func ValuesString(values Values) string {
 	var sb strings.Builder
-	for i, row := range b.options {
-		for j, cell := range row {
-			if len(cell) == 1 {
-				fmt.Fprintf(&sb, "%d ", cell[0])
-			} else {
-				fmt.Fprintf(&sb, "0 ")
-			}
+	width := 0
+	for _, s := range squares {
+		if len(values[s]) > width {
+			width = len(values[s]) + 1
+		}
+	}
+	width++
+	line := strings.Join(repeatString(strings.Repeat("-", width*3), 3), "+")
+	for i, r := range rows {
+		for j, c := range cols {
+			fmt.Fprintf(&sb, "%*s", width, values[string(r)+string(c)])
 			if (j+1)%subrank == 0 && j+1 < rank {
-				fmt.Fprintf(&sb, "| ")
+				fmt.Fprint(&sb, "|")
 			}
 		}
 		fmt.Fprintln(&sb)
-		if (i+1)%subrank == 0 && i+1 < rank {
-			fmt.Fprintln(&sb, strings.Repeat("-", (rank+2)*2))
+		if (i+1)%subrank == 0 && (i+1) < rank {
+			fmt.Fprintln(&sb, line)
 		}
 	}
 	return sb.String()
-}
-
-func (b *Board) Match(solution string) bool {
-	if !b.Solved() || !b.Valid() {
-		return false
-	}
-	return b.String() == solution
 }
