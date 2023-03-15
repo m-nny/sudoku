@@ -30,20 +30,26 @@ func eliminate(grid Grid, pos Pos, digit uint32) error {
 			}
 		}
 	}
-	// if a unit u is reduced to only one place for a value d, then put it there
+	// if a unit is reduced to only one place for a value *digit**, then put it there
 	for _, unit := range squareUnits[pos] {
-		var existsIn []Pos
+		existsIn, ok := Pos(-1), true
 		for _, pos := range unit {
 			if grid[pos].Contains(digit) {
-				existsIn = append(existsIn, pos)
+				if existsIn != -1 {
+					ok = false
+					break
+				}
+				existsIn = pos
 			}
 		}
-		if len(existsIn) == 0 {
+		if existsIn == -1 {
 			return fmt.Errorf("no options left for %s", pos)
-		} else if len(existsIn) == 1 {
-			if err := assign(grid, existsIn[0], digit); err != nil {
-				return err
-			}
+		}
+		if !ok {
+			continue
+		}
+		if err := assign(grid, existsIn, digit); err != nil {
+			return err
 		}
 	}
 	return nil
