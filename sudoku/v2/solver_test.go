@@ -26,8 +26,8 @@ func TestSolve(t *testing.T) {
 	}
 	for _, test := range testCase {
 		t.Run(test.name, func(t *testing.T) {
-			got := Solve(test.puzzle)
-			if got == nil {
+			got, err := Solve(test.puzzle)
+			if got == nil || err != nil {
 				t.Errorf("Solve() got error")
 			}
 			if CompactString(got) != test.solution {

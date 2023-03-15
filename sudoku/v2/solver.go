@@ -25,8 +25,8 @@ func search(grid Grid) (Grid, error) {
 	return nil, NoSolutionErr
 }
 
-func fewestPossibilites(grid Grid) (int, string) {
-	min, cell := rank+1, ""
+func fewestPossibilites(grid Grid) (int, Pos) {
+	min, cell := rank+1, Pos("")
 	for _, pos := range squares {
 		if 1 < grid[pos].Count() && grid[pos].Count() < min {
 			min = grid[pos].Count()

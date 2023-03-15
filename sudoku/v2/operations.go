@@ -2,7 +2,7 @@ package sudoku
 
 import "fmt"
 
-func assign(grid Grid, pos string, digit uint32) error {
+func assign(grid Grid, pos Pos, digit uint32) error {
 	for otherValue := uint32(1); otherValue <= 9; otherValue++ {
 		if !grid[pos].Contains(otherValue) || otherValue == digit {
 			continue
@@ -14,7 +14,7 @@ func assign(grid Grid, pos string, digit uint32) error {
 	return nil
 }
 
-func eliminate(grid Grid, pos string, digit uint32) error {
+func eliminate(grid Grid, pos Pos, digit uint32) error {
 	b := grid[pos]
 	if !b.Contains(digit) {
 		return nil // already eliminated
@@ -32,7 +32,7 @@ func eliminate(grid Grid, pos string, digit uint32) error {
 	}
 	// if a unit u is reduced to only one place for a value d, then put it there
 	for _, unit := range units[pos] {
-		var existsIn []string
+		var existsIn []Pos
 		for _, pos := range unit {
 			if grid[pos].Contains(digit) {
 				existsIn = append(existsIn, pos)

@@ -11,34 +11,36 @@ import (
 const rank = 9
 const subrank = 3
 
-const digits = "123456789"
-const rows = "ABCDEFGHI"
-const cols = digits
+var digits = []rune("123456789")
+var rows = []rune("ABCDEFGHI")
+var cols = digits
+
+type Pos string
 
 var squares = cross(rows, cols)
-var unitList [][]string
-var units = make(map[string][][]string)
-var peers = make(map[string][]string)
+var unitList [][]Pos
+var units = make(map[Pos][][]Pos)
+var peers = make(map[Pos][]Pos)
 
 var onesBitmap bitmap.Bitmap
 
 func init() {
 	// unitList
 	for _, c := range cols {
-		unitList = append(unitList, cross(rows, string(c)))
+		unitList = append(unitList, cross(rows, []rune{c}))
 	}
 	for _, r := range rows {
-		unitList = append(unitList, cross(string(r), cols))
+		unitList = append(unitList, cross([]rune{r}, cols))
 	}
 	for _, rs := range []string{"ABC", "DEF", "GHI"} {
 		for _, cs := range []string{"123", "456", "789"} {
-			unitList = append(unitList, cross(rs, cs))
+			unitList = append(unitList, cross([]rune(rs), []rune(cs)))
 		}
 	}
 
 	// units
 	for _, s := range squares {
-		var sUnits [][]string
+		var sUnits [][]Pos
 		for _, u := range unitList {
 			if slices.Contains(u, s) {
 				sUnits = append(sUnits, u)
@@ -57,7 +59,7 @@ func init() {
 	}
 }
 
-type Grid map[string]bitmap.Bitmap
+type Grid map[Pos]bitmap.Bitmap
 
 func (grid Grid) Clone() Grid {
 	newGrid := make(Grid)
@@ -67,20 +69,19 @@ func (grid Grid) Clone() Grid {
 	return newGrid
 }
 
-func gridValues(sGrid string) map[string]uint32 {
+func gridValues(sGrid string) map[Pos]uint32 {
 	var g []uint32
 	for _, c := range sGrid {
-		if strings.ContainsRune(digits, c) {
+		if '0' <= c && c <= '9' {
 			g = append(g, uint32(c-'0'))
-		}
-		if strings.ContainsRune(".0", c) {
+		} else if c == '.' {
 			g = append(g, 0)
 		}
 	}
 	if len(g) != 81 {
 		panic("Board should have 81 cells")
 	}
-	values := make(map[string]uint32)
+	values := make(map[Pos]uint32)
 	for i, s := range squares {
 		values[s] = g[i]
 	}
@@ -115,7 +116,7 @@ func PrettyString(values Grid) string {
 	line := strings.Join(repeatString(strings.Repeat("-", width*3), 3), "+")
 	for i, r := range rows {
 		for j, c := range cols {
-			fmt.Fprintf(&sb, "%*s", width, bitmapString(values[string(r)+string(c)]))
+			fmt.Fprintf(&sb, "%*s", width, bitmapString(values[Pos(string(r)+string(c))]))
 			if (j+1)%subrank == 0 && j+1 < rank {
 				fmt.Fprint(&sb, "|")
 			}

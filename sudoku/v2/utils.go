@@ -7,25 +7,25 @@ import (
 	"github.com/kelindar/bitmap"
 )
 
-func cross(a, b string) []string {
-	var prod []string
+func cross(a, b []rune) []Pos {
+	var prod []Pos
 	for _, i := range a {
 		for _, j := range b {
-			prod = append(prod, string(i)+string(j))
+			prod = append(prod, Pos(string(i)+string(j)))
 		}
 	}
 	return prod
 }
 
-func uniqueWithout(s [][]string, val string) []string {
-	exists := make(map[string]bool)
+func uniqueWithout(s [][]Pos, val Pos) []Pos {
+	exists := make(map[Pos]bool)
 	for _, slice := range s {
 		for _, val := range slice {
 			exists[val] = true
 		}
 	}
 	exists[val] = false
-	var allValues []string
+	var allValues []Pos
 	for val, ok := range exists {
 		if ok {
 			allValues = append(allValues, val)
