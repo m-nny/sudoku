@@ -50,25 +50,9 @@ func init() {
 	}
 }
 
-type Values = map[string]string
+type Grid = map[string]string
 
-func ParseGrid(grid string) Values {
-	values := make(Values)
-	for _, s := range squares {
-		values[s] = digits
-	}
-	for s, d := range gridValues(grid) {
-		if !strings.Contains(digits, d) {
-			continue
-		}
-		if val := assign(values, s, d); val == nil {
-			return nil
-		}
-	}
-	return values
-}
-
-func gridValues(grid string) map[string]string {
+func gridValues(grid string) Grid {
 	var sb strings.Builder
 	for _, c := range grid {
 		if strings.ContainsRune(digits, c) || strings.ContainsRune(".0", c) {
@@ -79,59 +63,30 @@ func gridValues(grid string) map[string]string {
 	if len(g) != 81 {
 		panic("Board should have 81 cells")
 	}
-	values := make(map[string]string)
+	values := make(Grid)
 	for i, s := range squares {
 		values[s] = string(g[i])
 	}
 	return values
 }
 
-func assign(values Values, s, d string) Values {
-	otherValues := strings.ReplaceAll(values[s], d, "")
-	for _, d2 := range otherValues {
-		if val := eliminate(values, s, string(d2)); val == nil {
+func ParseGrid(sGrid string) Grid {
+	grid := make(Grid)
+	for _, pos := range squares {
+		grid[pos] = digits
+	}
+	for pos, digit := range gridValues(sGrid) {
+		if digit == "0" {
+			continue
+		}
+		if val := assign(grid, pos, rune(digit[0])); val == nil {
 			return nil
 		}
 	}
-	return values
+	return grid
 }
 
-func eliminate(values Values, s string, d string) Values {
-	if !strings.Contains(values[s], d) {
-		return values // already eliminated
-	}
-	values[s] = strings.ReplaceAll(values[s], string(d), "")
-	// if square is reduced to one value d, then eliminate d from the peers
-	if len(values[s]) == 0 {
-		return nil
-	} else if len(values[s]) == 1 {
-		d2 := values[s]
-		for _, s2 := range peers[s] {
-			if val := eliminate(values, s2, d2); val == nil {
-				return nil
-			}
-		}
-	}
-	// if a unit u is reduced to only one place for a value d, then put it there
-	for _, u := range units[s] {
-		var dplaces []string
-		for _, s := range u {
-			if strings.Contains(values[s], d) {
-				dplaces = append(dplaces, s)
-			}
-		}
-		if len(dplaces) == 0 {
-			return nil
-		} else if len(dplaces) == 1 {
-			if val := assign(values, dplaces[0], d); val == nil {
-				return nil
-			}
-		}
-	}
-	return values
-}
-
-func PrettyString(values Values) string {
+func PrettyString(values Grid) string {
 	var sb strings.Builder
 	width := 0
 	for _, s := range squares {
@@ -156,7 +111,7 @@ func PrettyString(values Values) string {
 	return sb.String()
 }
 
-func CompactString(values Values) string {
+func CompactString(values Grid) string {
 	var sb strings.Builder
 	for _, s := range squares {
 		if len(values[s]) == 1 {

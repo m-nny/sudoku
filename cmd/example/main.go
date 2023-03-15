@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/m-nny/sudoku-solver/pkg/sudoku"
+	"github.com/m-nny/sudoku-solver/sudoku/v1"
 )
 
 func main() {

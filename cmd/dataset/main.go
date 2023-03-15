@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/m-nny/sudoku-solver/pkg/sudoku"
+	"github.com/m-nny/sudoku-solver/sudoku/v1"
 	"github.com/schollz/progressbar/v3"
 )
 
