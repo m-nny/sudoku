@@ -8,68 +8,104 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-const rank = 9
-const subrank = 3
+const RANK = 9
+const SUBRANK = 3
 
-var digits = []rune("123456789")
-var rows = []rune("ABCDEFGHI")
-var cols = digits
+type Pos int
 
-type Pos string
+func PosFrom(i, j int) Pos {
+	return Pos(i*RANK + j)
+}
+func (pos Pos) IJ() (int, int) {
+	i, j := int(pos)/RANK, int(pos)%RANK
+	return i, j
+}
+func (pos Pos) blockStart() (int, int) {
+	i, j := pos.IJ()
+	return (i / SUBRANK) * SUBRANK, (j / SUBRANK) * SUBRANK
+}
+func (pos Pos) String() string {
+	i, j := pos.IJ()
+	return fmt.Sprintf("%dx%d", i, j)
+}
 
-var squares = cross(rows, cols)
-var unitList [][]Pos
-var units = make(map[Pos][][]Pos)
-var peers = make(map[Pos][]Pos)
+type Unit []Pos
+
+var squares []Pos
+var squareUnits = make([][]Unit, RANK*RANK)
+var peers = make([][]Pos, RANK*RANK)
 
 var onesBitmap bitmap.Bitmap
 
 func init() {
-	// unitList
-	for _, c := range cols {
-		unitList = append(unitList, cross(rows, []rune{c}))
-	}
-	for _, r := range rows {
-		unitList = append(unitList, cross([]rune{r}, cols))
-	}
-	for _, rs := range []string{"ABC", "DEF", "GHI"} {
-		for _, cs := range []string{"123", "456", "789"} {
-			unitList = append(unitList, cross([]rune(rs), []rune(cs)))
+	for i := 0; i < RANK; i++ {
+		for j := 0; j < RANK; j++ {
+			squares = append(squares, PosFrom(i, j))
 		}
 	}
-
-	// units
-	for _, s := range squares {
-		var sUnits [][]Pos
-		for _, u := range unitList {
-			if slices.Contains(u, s) {
-				sUnits = append(sUnits, u)
+	var allUnits []Unit
+	// rowUnits
+	for i := 0; i < RANK; i++ {
+		var rowUnit Unit
+		for j := 0; j < RANK; j++ {
+			rowUnit = append(rowUnit, PosFrom(i, j))
+		}
+		allUnits = append(allUnits, rowUnit)
+	}
+	// colUnits
+	for j := 0; j < RANK; j++ {
+		var colUnit Unit
+		for i := 0; i < RANK; i++ {
+			colUnit = append(colUnit, PosFrom(i, j))
+		}
+		allUnits = append(allUnits, colUnit)
+	}
+	// blockUnits
+	for i0 := 0; i0 < RANK; i0 += SUBRANK {
+		for j0 := 0; j0 < RANK; j0 += SUBRANK {
+			var blockUnit Unit
+			for i := i0; i < i0+SUBRANK; i++ {
+				for j := j0; j < j0+SUBRANK; j++ {
+					blockUnit = append(blockUnit, PosFrom(i, j))
+				}
+			}
+			allUnits = append(allUnits, blockUnit)
+		}
+	}
+	// peers && squareUnits
+	for _, pos := range squares {
+		for _, unit := range allUnits {
+			if !slices.Contains(unit, pos) {
+				continue
+			}
+			squareUnits[pos] = append(squareUnits[pos], unit)
+			for _, peer := range unit {
+				if peer != pos {
+					peers[pos] = append(peers[pos], peer)
+				}
 			}
 		}
-		units[s] = sUnits
+	}
+	for _, pos := range squares {
+		peers[pos] = removeDuplicates(peers[pos])
 	}
 
-	// peers
-	for _, s := range squares {
-		peers[s] = uniqueWithout(units[s], s)
-	}
-
-	for i := uint32(1); i <= 9; i++ {
+	for i := uint32(1); i <= RANK; i++ {
 		onesBitmap.Set(i)
 	}
 }
 
-type Grid map[Pos]bitmap.Bitmap
+type Grid []bitmap.Bitmap // Slice of dimention [RANK*RANK]
 
 func (grid Grid) Clone() Grid {
-	newGrid := make(Grid)
+	newGrid := make(Grid, RANK*RANK)
 	for pos, b := range grid {
 		newGrid[pos] = b.Clone(nil)
 	}
 	return newGrid
 }
 
-func gridValues(sGrid string) map[Pos]uint32 {
+func gridValues(sGrid string) []uint32 {
 	var g []uint32
 	for _, c := range sGrid {
 		if '0' <= c && c <= '9' {
@@ -78,18 +114,14 @@ func gridValues(sGrid string) map[Pos]uint32 {
 			g = append(g, 0)
 		}
 	}
-	if len(g) != 81 {
+	if len(g) != RANK*RANK {
 		panic("Board should have 81 cells")
 	}
-	values := make(map[Pos]uint32)
-	for i, s := range squares {
-		values[s] = g[i]
-	}
-	return values
+	return g
 }
 
 func ParseGrid(sGrid string) (Grid, error) {
-	grid := make(Grid)
+	grid := make(Grid, RANK*RANK)
 	for _, pos := range squares {
 		grid[pos] = onesBitmap.Clone(nil)
 	}
@@ -97,7 +129,7 @@ func ParseGrid(sGrid string) (Grid, error) {
 		if digit == 0 {
 			continue
 		}
-		if err := assign(grid, pos, digit); err != nil {
+		if err := assign(grid, Pos(pos), digit); err != nil {
 			return nil, err
 		}
 	}
@@ -114,15 +146,15 @@ func PrettyString(values Grid) string {
 	}
 	width++
 	line := strings.Join(repeatString(strings.Repeat("-", width*3), 3), "+")
-	for i, r := range rows {
-		for j, c := range cols {
-			fmt.Fprintf(&sb, "%*s", width, bitmapString(values[Pos(string(r)+string(c))]))
-			if (j+1)%subrank == 0 && j+1 < rank {
+	for i := 0; i < RANK; i++ {
+		for j := 0; j < RANK; j++ {
+			fmt.Fprintf(&sb, "%*s", width, bitmapString(values[PosFrom(i, j)]))
+			if (j+1)%SUBRANK == 0 && j+1 < RANK {
 				fmt.Fprint(&sb, "|")
 			}
 		}
 		fmt.Fprintln(&sb)
-		if (i+1)%subrank == 0 && (i+1) < rank {
+		if (i+1)%SUBRANK == 0 && (i+1) < RANK {
 			fmt.Fprintln(&sb, line)
 		}
 	}

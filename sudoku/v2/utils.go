@@ -5,33 +5,12 @@ import (
 	"strings"
 
 	"github.com/kelindar/bitmap"
+	"golang.org/x/exp/slices"
 )
 
-func cross(a, b []rune) []Pos {
-	var prod []Pos
-	for _, i := range a {
-		for _, j := range b {
-			prod = append(prod, Pos(string(i)+string(j)))
-		}
-	}
-	return prod
-}
-
-func uniqueWithout(s [][]Pos, val Pos) []Pos {
-	exists := make(map[Pos]bool)
-	for _, slice := range s {
-		for _, val := range slice {
-			exists[val] = true
-		}
-	}
-	exists[val] = false
-	var allValues []Pos
-	for val, ok := range exists {
-		if ok {
-			allValues = append(allValues, val)
-		}
-	}
-	return allValues
+func removeDuplicates(s []Pos) []Pos {
+	slices.Sort(s)
+	return slices.Compact(s)
 }
 
 func repeatString(val string, n int) []string {
