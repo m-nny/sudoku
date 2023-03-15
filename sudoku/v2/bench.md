@@ -5,5 +5,13 @@ solveSudokusParallel() finished in 6.473806968s
 workerNum 16
 All 100000 puzzles solved!
 correct: 100000 incorrent: 0 errors: 0
+```
 
+```bash
+$ go run cmd/dataset/main.go --dataset testdata/sudoku_1kk.csv  --workers 16
+ 100% |████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| (1000000/1000000, 18354 it/s)
+solveSudokusParallel() finished in 54.837620915s
+workerNum 16
+All 1000000 puzzles solved!
+correct: 1000000 incorrent: 0 errors: 0
 ```

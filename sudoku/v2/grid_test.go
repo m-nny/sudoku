@@ -6,7 +6,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestRank(t *testing.T) {
+func TestInit(t *testing.T) {
 	wantSubrank := 3
 	if SUBRANK != wantSubrank {
 		t.Errorf("subrank = %v; want = %v", SUBRANK, wantSubrank)
@@ -15,10 +15,7 @@ func TestRank(t *testing.T) {
 	if RANK != wantRank {
 		t.Errorf("rank = %v; want = %v", RANK, wantRank)
 	}
-}
-
-func TestInit(t *testing.T) {
-	if len(squares) != 81 {
+	if len(squares) != RANK*RANK {
 		t.Errorf("len(squares) != 81")
 	}
 	for _, s := range squares {

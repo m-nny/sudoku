@@ -30,20 +30,29 @@ func solveDataset(dataset string) error {
 	if err != nil {
 		return err
 	}
+	if !*parallelOnly {
+		fmt.Printf("solveSudokus()")
+		result, err := solveSudokus(sudokus)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("All %d puzzles solved!\ncorrect: %d incorrent: %d errors: %d\n",
+			result.total, result.correct, result.incorrect, result.errors)
+		fmt.Println()
+		if result.errors > 0 {
+			return nil
+		}
+	}
+
 	fmt.Printf("solveSudokusParallel()")
-	resultP := solveSudokusParallel(sudokus, *workerNumPtr)
+	resultP, err := solveSudokusParallel(sudokus, *workerNumPtr)
+	if err != nil {
+		return err
+	}
 	fmt.Printf("workerNum %d\n", *workerNumPtr)
 	fmt.Printf("All %d puzzles solved!\ncorrect: %d incorrent: %d errors: %d\n",
 		resultP.total, resultP.correct, resultP.incorrect, resultP.errors)
 	fmt.Println()
-
-	if !*parallelOnly {
-		fmt.Printf("solveSudokus()")
-		result := solveSudokus(sudokus)
-		fmt.Printf("All %d puzzles solved!\ncorrect: %d incorrent: %d errors: %d\n",
-			result.total, result.correct, result.incorrect, result.errors)
-		fmt.Println()
-	}
 
 	return nil
 }
@@ -74,7 +83,7 @@ type SolveSudokusResult struct {
 	total     int
 }
 
-func solveSudokus(sudokus [][]string) SolveSudokusResult {
+func solveSudokus(sudokus [][]string) (SolveSudokusResult, error) {
 	var result SolveSudokusResult
 	start := time.Now()
 	defer func() {
@@ -88,8 +97,8 @@ func solveSudokus(sudokus [][]string) SolveSudokusResult {
 		board, err := sudoku.Solve(puzzle)
 		if board == nil || err != nil {
 			result.errors++
-			fmt.Printf("Error reading board\n")
-			break
+			fmt.Printf("Error solving board:\n%v\n", puzzle)
+			return result, nil
 		}
 		if sudoku.CompactString(board) == solution {
 			result.correct++
@@ -101,7 +110,7 @@ func solveSudokus(sudokus [][]string) SolveSudokusResult {
 		}
 		bar.Add(1)
 	}
-	return result
+	return result, nil
 }
 
 type JobResult struct {
@@ -110,9 +119,10 @@ type JobResult struct {
 	solution string
 	proposal string
 	took     time.Duration
+	err      error
 }
 
-func solveSudokusParallel(sudokus [][]string, numWorkers int) SolveSudokusResult {
+func solveSudokusParallel(sudokus [][]string, numWorkers int) (SolveSudokusResult, error) {
 	var result SolveSudokusResult
 	start := time.Now()
 	defer func() {
@@ -143,10 +153,12 @@ func solveSudokusParallel(sudokus [][]string, numWorkers int) SolveSudokusResult
 	}()
 
 	bar := progressbar.Default(int64(result.total))
+	defer bar.Finish()
 	for jobResult := range results {
-		if jobResult.proposal == "" {
+		if jobResult.proposal == "" || jobResult.err != nil {
 			result.errors++
-			fmt.Printf("Error reading board\n")
+			fmt.Printf("Error solving board\n%v\n", jobResult.puzzle)
+			return result, jobResult.err
 		} else if jobResult.proposal == jobResult.solution {
 			result.correct++
 		} else {
@@ -156,7 +168,7 @@ func solveSudokusParallel(sudokus [][]string, numWorkers int) SolveSudokusResult
 		}
 		bar.Add(1)
 	}
-	return result
+	return result, nil
 }
 
 func solveSudokuWorker(jobs <-chan *JobResult, results chan<- *JobResult, wg *sync.WaitGroup) {
@@ -165,7 +177,7 @@ func solveSudokuWorker(jobs <-chan *JobResult, results chan<- *JobResult, wg *sy
 		// fmt.Printf("Solving %d\n", job.id)
 		start := time.Now()
 		board, err := sudoku.Solve(job.puzzle)
-		if board != nil || err != nil {
+		if board != nil && err == nil {
 			job.proposal = sudoku.CompactString(board)
 		}
 		job.took = time.Since(start)

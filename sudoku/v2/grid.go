@@ -105,6 +105,12 @@ func (grid Grid) Clone() Grid {
 	return newGrid
 }
 
+func (grid Grid) Options(pos Pos) []uint32 {
+	var options []uint32
+	grid[pos].Range(func(x uint32) { options = append(options, x) })
+	return options
+}
+
 func gridValues(sGrid string) []uint32 {
 	var g []uint32
 	for _, c := range sGrid {

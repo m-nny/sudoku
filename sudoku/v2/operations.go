@@ -3,8 +3,8 @@ package sudoku
 import "fmt"
 
 func assign(grid Grid, pos Pos, digit uint32) error {
-	for otherValue := uint32(1); otherValue <= RANK; otherValue++ {
-		if !grid[pos].Contains(otherValue) || otherValue == digit {
+	for _, otherValue := range grid.Options(pos) {
+		if otherValue == digit {
 			continue
 		}
 		if err := eliminate(grid, pos, otherValue); err != nil {
