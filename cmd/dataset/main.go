@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/m-nny/sudoku-solver/sudoku/v1"
+	"github.com/m-nny/sudoku-solver/sudoku/v2"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -85,8 +85,8 @@ func solveSudokus(sudokus [][]string) SolveSudokusResult {
 	bar := progressbar.Default(int64(result.total))
 	for _, entry := range sudokus {
 		puzzle, solution := entry[0], entry[1]
-		board := sudoku.Solve(puzzle)
-		if board == nil {
+		board, err := sudoku.Solve(puzzle)
+		if board == nil || err != nil {
 			result.errors++
 			fmt.Printf("Error reading board\n")
 			break
@@ -164,8 +164,8 @@ func solveSudokuWorker(jobs <-chan *JobResult, results chan<- *JobResult, wg *sy
 	for job := range jobs {
 		// fmt.Printf("Solving %d\n", job.id)
 		start := time.Now()
-		board := sudoku.Solve(job.puzzle)
-		if board != nil {
+		board, err := sudoku.Solve(job.puzzle)
+		if board != nil || err != nil {
 			job.proposal = sudoku.CompactString(board)
 		}
 		job.took = time.Since(start)

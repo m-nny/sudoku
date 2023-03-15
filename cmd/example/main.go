@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/m-nny/sudoku-solver/sudoku/v1"
+	"github.com/m-nny/sudoku-solver/sudoku/v2"
 )
 
 func main() {
@@ -17,12 +17,10 @@ func main() {
 }
 
 func solve(puzzle, solution string) error {
-	puz := sudoku.Solve(puzzle)
-	if puz == nil {
-		return sudoku.UnknownErr
+	puz, err := sudoku.Solve(puzzle)
+	if err != nil {
+		return err
 	}
-	fmt.Printf("Puzzle:\n%v\n", sudoku.PrettyString(puz))
-
 	fmt.Printf("Found solution.\n%v\n", sudoku.PrettyString(puz))
 	if sudoku.CompactString(puz) != solution {
 		fmt.Printf("Solve() = %v; want = %v", sudoku.CompactString(puz), solution)
