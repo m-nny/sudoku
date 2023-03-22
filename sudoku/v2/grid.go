@@ -20,10 +20,6 @@ func (pos Pos) IJ() (int, int) {
 	i, j := int(pos)/RANK, int(pos)%RANK
 	return i, j
 }
-func (pos Pos) blockStart() (int, int) {
-	i, j := pos.IJ()
-	return (i / SUBRANK) * SUBRANK, (j / SUBRANK) * SUBRANK
-}
 func (pos Pos) String() string {
 	i, j := pos.IJ()
 	return fmt.Sprintf("%dx%d", i, j)
@@ -106,13 +102,13 @@ func (grid Grid) Clone() Grid {
 }
 
 func (grid Grid) Options(pos Pos) []uint32 {
-	var options []uint32
+	options := make([]uint32, 0, RANK)
 	grid[pos].Range(func(x uint32) { options = append(options, x) })
 	return options
 }
 
 func gridValues(sGrid string) []uint32 {
-	var g []uint32
+	g := make([]uint32, 0, RANK*RANK)
 	for _, c := range sGrid {
 		if '0' <= c && c <= '9' {
 			g = append(g, uint32(c-'0'))

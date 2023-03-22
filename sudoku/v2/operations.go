@@ -1,7 +1,5 @@
 package sudoku
 
-import "fmt"
-
 func assign(grid Grid, pos Pos, digit uint32) error {
 	for _, otherValue := range grid.Options(pos) {
 		if otherValue == digit {
@@ -21,7 +19,7 @@ func eliminate(grid Grid, pos Pos, digit uint32) error {
 	}
 	b.Remove(digit)
 	if b.Count() == 0 {
-		return fmt.Errorf("removed last digit at %s", pos)
+		return NoSolutionErr
 	} else if b.Count() == 1 { // if square is reduced to one value d, then eliminate d from the peers
 		leftValue, _ := b.Min()
 		for _, peer := range peers[pos] {
@@ -43,7 +41,7 @@ func eliminate(grid Grid, pos Pos, digit uint32) error {
 			}
 		}
 		if existsIn == -1 {
-			return fmt.Errorf("no options left for %s", pos)
+			return NoSolutionErr
 		}
 		if !ok {
 			continue
