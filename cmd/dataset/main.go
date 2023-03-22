@@ -87,7 +87,7 @@ func solveSudokus(sudokus [][]string) (SolveSudokusResult, error) {
 	var result SolveSudokusResult
 	start := time.Now()
 	defer func() {
-		fmt.Printf("solveSudokus() finished in %v\n", time.Since(start))
+		fmt.Printf("solveSudokus() finished in %v\n", time.Since(start).Truncate(time.Millisecond))
 	}()
 	result.total = len(sudokus)
 
@@ -126,7 +126,7 @@ func solveSudokusParallel(sudokus [][]string, numWorkers int) (SolveSudokusResul
 	var result SolveSudokusResult
 	start := time.Now()
 	defer func() {
-		fmt.Printf("solveSudokusParallel() finished in %v\n", time.Since(start))
+		fmt.Printf("solveSudokusParallel() finished in %v\n", time.Since(start).Truncate(time.Millisecond))
 	}()
 	result.total = len(sudokus)
 
