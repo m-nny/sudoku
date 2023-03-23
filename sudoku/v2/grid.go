@@ -163,7 +163,29 @@ func PrettyString(values Grid) string {
 	return sb.String()
 }
 
+func PrettySudoku(sGrid string) string {
+	var sb strings.Builder
+	width := 2
+	line := strings.Join(repeatString(strings.Repeat("-", width*3), 3), "+")
+	for i := 0; i < RANK; i++ {
+		for j := 0; j < RANK; j++ {
+			fmt.Fprintf(&sb, "%*s", width, string(sGrid[PosFrom(i, j)]))
+			if (j+1)%SUBRANK == 0 && j+1 < RANK {
+				fmt.Fprint(&sb, "|")
+			}
+		}
+		fmt.Fprintln(&sb)
+		if (i+1)%SUBRANK == 0 && (i+1) < RANK {
+			fmt.Fprintln(&sb, line)
+		}
+	}
+	return sb.String()
+}
+
 func CompactString(values Grid) string {
+	if values == nil {
+		return "<nil>"
+	}
 	var sb strings.Builder
 	for _, s := range squares {
 		if values[s].Count() == 1 {
