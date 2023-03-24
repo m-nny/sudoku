@@ -11,25 +11,26 @@ func Generate(hints int) (string, error) {
 		return "", err
 	}
 	order := rand.Perm(RANK * RANK)
-	for i := 0; i < hints; i++ {
-		pos := Pos(order[i])
-		options := grid.Options(pos)
-		shuffleSlice(options)
-		// fmt.Printf("[%d] pos: %d\n%v\n", i, pos, PrettyString(grid))
-		for _, digit := range options {
-			newGrid := grid.Clone()
-			if err := assign(newGrid, pos, digit); err == nil {
-				grid = newGrid
-				break
-			}
-		}
+	grid, err = generateRec(grid, order, 0, hints)
+	if err != nil {
+		return "", err
 	}
 	return CompactString(grid), nil
 }
 
-func shuffleSlice(slice []uint32) []uint32 {
-	rand.Shuffle(len(slice), func(i, j int) {
-		slice[i], slice[j] = slice[j], slice[i]
-	})
-	return slice
+func generateRec(oldGrid Grid, order []int, i, hints int) (Grid, error) {
+	if hints <= 0 {
+		return oldGrid, nil
+	}
+	pos := Pos(order[i])
+	for _, digit := range shuffleSlice(oldGrid.Options(pos))[:3] {
+		newGrid := oldGrid.Clone()
+		if err := assign(newGrid, pos, digit); err != nil {
+			continue
+		}
+		if val, err := generateRec(newGrid, order, i+1, hints-1); err == nil {
+			return val, nil
+		}
+	}
+	return nil, NoSolutionErr
 }

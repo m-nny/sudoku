@@ -47,3 +47,18 @@ func fewestPossibilites(grid Grid) Pos {
 	}
 	return cell
 }
+
+func mostPossibilites(grid Grid) Pos {
+	max, cell := 1, Pos(-1)
+	for _, pos := range squares {
+		posCount := grid[pos].Count()
+		if posCount == RANK {
+			return pos
+		}
+		if 1 < posCount && posCount < max {
+			max = posCount
+			cell = pos
+		}
+	}
+	return cell
+}

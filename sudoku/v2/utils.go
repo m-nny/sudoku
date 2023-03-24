@@ -2,6 +2,7 @@ package sudoku
 
 import (
 	"fmt"
+	"math/rand"
 	"strings"
 
 	"github.com/kelindar/bitmap"
@@ -27,4 +28,11 @@ func bitmapString(b bitmap.Bitmap) string {
 		fmt.Fprintf(&sb, "%d", digit)
 	})
 	return sb.String()
+}
+
+func shuffleSlice(slice []uint32) []uint32 {
+	rand.Shuffle(len(slice), func(i, j int) {
+		slice[i], slice[j] = slice[j], slice[i]
+	})
+	return slice
 }
