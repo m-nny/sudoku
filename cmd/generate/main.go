@@ -11,7 +11,7 @@ import (
 
 	"github.com/schollz/progressbar/v3"
 
-	"github.com/m-nny/sudoku-solver/sudoku/v2"
+	"github.com/m-nny/sudoku-solver/pkg/solver"
 )
 
 var seedPtr = flag.Int64("seed", -1, "seed")
