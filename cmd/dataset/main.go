@@ -5,10 +5,10 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"sync"
 	"time"
 
-	"github.com/m-nny/sudoku-solver/sudoku/v2"
+	"github.com/m-nny/sudoku-solver/pkg/parallel_solver"
+	sudoku "github.com/m-nny/sudoku-solver/pkg/solver"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -113,74 +113,29 @@ func solveSudokus(sudokus [][]string) (SolveSudokusResult, error) {
 	return result, nil
 }
 
-type JobResult struct {
-	id       int
-	puzzle   string
-	solution string
-	proposal string
-	took     time.Duration
-	err      error
-}
-
 func solveSudokusParallel(sudokus [][]string, numWorkers int) (SolveSudokusResult, error) {
-	var result SolveSudokusResult
-	start := time.Now()
-	defer func() {
-		fmt.Printf("solveSudokusParallel() finished in %v\n", time.Since(start).Truncate(time.Millisecond))
-	}()
-	result.total = len(sudokus)
-
-	var wg sync.WaitGroup
-	jobs := make(chan *JobResult, result.total)
-	results := make(chan *JobResult, result.total)
-
-	for i := 0; i < numWorkers; i++ {
-		wg.Add(1)
-		go solveSudokuWorker(jobs, results, &wg)
+	result := SolveSudokusResult{total: len(sudokus)}
+	var jobs []*parallel_solver.SolveResult
+	for i, entry := range sudokus {
+		jobs = append(jobs, &parallel_solver.SolveResult{
+			Id:              i,
+			Puzzle:          entry[0],
+			CorrectSolution: entry[1],
+		})
 	}
-
-	for id, entry := range sudokus {
-		jobs <- &JobResult{
-			id:       id + 1,
-			puzzle:   entry[0],
-			solution: entry[1],
-		}
-	}
-	close(jobs)
-	go func() {
-		wg.Wait()
-		close(results)
-	}()
-
-	bar := progressbar.Default(int64(result.total))
-	defer bar.Finish()
-	for jobResult := range results {
-		if jobResult.proposal == "" || jobResult.err != nil {
+	results := parallel_solver.Solve(jobs, numWorkers)
+	for _, jobResult := range results {
+		if jobResult.Solution == "" || jobResult.Err != nil {
 			result.errors++
-			fmt.Printf("Error solving board\n%v\n", jobResult.puzzle)
-			return result, jobResult.err
-		} else if jobResult.proposal == jobResult.solution {
+			fmt.Printf("Error solving board\n%v\n", jobResult.Puzzle)
+			return result, jobResult.Err
+		} else if jobResult.Solution == jobResult.CorrectSolution {
 			result.correct++
 		} else {
-			fmt.Printf("Found incorrect solution for board:\n%v\n%v\n", jobResult.puzzle, jobResult.proposal)
-			fmt.Printf("Expected:\n%v\n", jobResult.solution)
+			fmt.Printf("Found incorrect solution for board:\n%v\n%v\n", jobResult.Puzzle, jobResult.Solution)
+			fmt.Printf("Expected:\n%v\n", jobResult.CorrectSolution)
 			result.incorrect++
 		}
-		bar.Add(1)
 	}
 	return result, nil
-}
-
-func solveSudokuWorker(jobs <-chan *JobResult, results chan<- *JobResult, wg *sync.WaitGroup) {
-	defer wg.Done()
-	for job := range jobs {
-		// fmt.Printf("Solving %d\n", job.id)
-		start := time.Now()
-		board, err := sudoku.Solve(job.puzzle)
-		if board != nil && err == nil {
-			job.proposal = sudoku.CompactString(board)
-		}
-		job.took = time.Since(start)
-		results <- job
-	}
 }
