@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/m-nny/sudoku-solver/pkg/dataset"
-	"github.com/m-nny/sudoku-solver/pkg/parallel_solver"
-	sudoku "github.com/m-nny/sudoku-solver/pkg/solver"
+	"github.com/m-nny/sudoku-solver/pkg/parallel"
+	"github.com/m-nny/sudoku-solver/pkg/sudoku"
 )
 
 var NPtr = flag.Int("n", 100, "# of puzzles to generate")
@@ -39,7 +39,7 @@ func main() {
 }
 
 func generateAndSave(datasetFile string, n, hints, workers int) error {
-	results := parallel_solver.Generate(n, hints, workers)
+	results := parallel.Generate(n, hints, workers)
 	var puzzles []string
 	for _, puzzle := range results {
 		if puzzle.Err != nil {
@@ -58,14 +58,14 @@ func loadAndSolve(datasetFile string, workers int) error {
 	if err != nil {
 		return nil
 	}
-	var sudokus []*parallel_solver.SolveResult
+	var sudokus []*parallel.SolveResult
 	for id, puzzle := range puzzles {
-		sudokus = append(sudokus, &parallel_solver.SolveResult{
+		sudokus = append(sudokus, &parallel.SolveResult{
 			Id:     id,
 			Puzzle: puzzle,
 		})
 	}
-	sudokus = parallel_solver.Solve(sudokus, workers)
+	sudokus = parallel.Solve(sudokus, workers)
 	fmt.Println(datasetFile)
 	stats := map[string]stat{
 		"no-solution":        {math.MaxInt, math.MinInt, 0, 0},

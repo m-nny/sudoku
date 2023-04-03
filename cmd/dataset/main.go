@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/m-nny/sudoku-solver/pkg/parallel_solver"
-	sudoku "github.com/m-nny/sudoku-solver/pkg/solver"
+	"github.com/m-nny/sudoku-solver/pkg/parallel"
+	"github.com/m-nny/sudoku-solver/pkg/sudoku"
 	"github.com/schollz/progressbar/v3"
 )
 
@@ -115,15 +115,15 @@ func solveSudokus(sudokus [][]string) (SolveSudokusResult, error) {
 
 func solveSudokusParallel(sudokus [][]string, numWorkers int) (SolveSudokusResult, error) {
 	result := SolveSudokusResult{total: len(sudokus)}
-	var jobs []*parallel_solver.SolveResult
+	var jobs []*parallel.SolveResult
 	for i, entry := range sudokus {
-		jobs = append(jobs, &parallel_solver.SolveResult{
+		jobs = append(jobs, &parallel.SolveResult{
 			Id:              i,
 			Puzzle:          entry[0],
 			CorrectSolution: entry[1],
 		})
 	}
-	results := parallel_solver.Solve(jobs, numWorkers)
+	results := parallel.Solve(jobs, numWorkers)
 	for _, jobResult := range results {
 		if jobResult.Solution == "" || jobResult.Err != nil {
 			result.errors++

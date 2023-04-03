@@ -1,11 +1,11 @@
-package parallel_solver
+package parallel
 
 import (
 	"fmt"
 	"sync"
 	"time"
 
-	sudoku "github.com/m-nny/sudoku-solver/pkg/solver"
+	"github.com/m-nny/sudoku-solver/pkg/sudoku"
 	"github.com/schollz/progressbar/v3"
 )
 
